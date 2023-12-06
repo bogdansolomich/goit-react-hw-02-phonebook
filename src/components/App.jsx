@@ -1,11 +1,12 @@
 import { Component } from 'react';
 import { nanoid } from 'nanoid';
-
-import { Section } from './Section/Section';
-import { FormContacts } from './FormContacts/FormContacts';
-import { ContactsList } from './ContactsList/ContactsList';
-import { Filter } from './Filter/Filter';
-import { Notification } from './Notification/Notification';
+import { ContactForm } from './ContactForm/ContactForm';
+import { ContactList } from './ContactList/ContactList';
+import { ContactFilter } from './ContactFilter/ContactFilter';
+import { StyledSection, SectionTitle, ContactsTitle } from './Section.styled';
+import { GlobalStyle } from './Globalstyle';
+import { Container } from './Container';
+import { StyledNotification } from './Notification.styled';
 
 export class App extends Component {
   state = {
@@ -13,58 +14,70 @@ export class App extends Component {
     filter: '',
   };
 
-  onSubmitForm = (values, { resetForm }) => {
-    resetForm();
-    const duplicateContactName = this.state.contacts.find(
-      contact => contact.name.toLowerCase() === values.name.toLowerCase()
+  addContact = newContact => {
+    const isContactInList = this.state.contacts.some(
+      contact => contact.name.toLowerCase() === newContact.name.toLowerCase()
     );
-    if (duplicateContactName) {
-      alert(`${duplicateContactName.name} is already in contacts`);
+
+    if (isContactInList) {
+      alert(`${newContact.name} is already in contacts.`);
       return;
     }
-    this.addNewContact(values);
-  };
 
-  addNewContact = ({ name, number }) => {
-    const newContact = { id: nanoid(), name, number };
     this.setState(prevState => ({
-      contacts: [...prevState.contacts, newContact],
+      contacts: [...prevState.contacts, { id: nanoid(), ...newContact }],
     }));
   };
 
-  onChangeFilter = ({ target }) =>
-    this.setState({ filter: target.value.toLowerCase() });
-
-  filteredList = () => {
-    const { filter, contacts } = this.state;
-    return (
-      contacts.filter(i => i.name.toLowerCase().includes(filter)) || contacts
-    );
+  filterContactsByName = newContactName => {
+    this.setState({
+      filter: newContactName,
+    });
   };
 
-  onDelete = id =>
+  deleteContact = contactId => {
     this.setState(prevState => ({
-      contacts: prevState.contacts.filter(item => item.id !== id),
+      contacts: prevState.contacts.filter(contact => contact.id !== contactId),
     }));
+  };
 
   render() {
-    const { onChangeFilter, onSubmitForm, filteredList, onDelete } = this;
     const { contacts, filter } = this.state;
+
+    const filteredContacts = contacts.filter(contact =>
+      contact.name.toLowerCase().includes(filter.toLowerCase())
+    );
+
     return (
       <>
-        <Section title={'Phonebook'}>
-          <FormContacts onSubmitForm={onSubmitForm} />
-        </Section>
-        <Section title={'Contacts'}>
-          {contacts.length ? (
-            <>
-              <Filter filter={filter} onChangeFilter={onChangeFilter} />
-              <ContactsList contacts={filteredList()} onDelete={onDelete} />
-            </>
-          ) : (
-            <Notification message={'There is no contacts!'} />
-          )}
-        </Section>
+        <StyledSection>
+          <Container>
+            <SectionTitle>Phonebook</SectionTitle>
+            <ContactForm onAdd={this.addContact} />
+          </Container>
+        </StyledSection>
+
+        <StyledSection>
+          <Container>
+            <ContactsTitle>Contacts</ContactsTitle>
+            <ContactFilter
+              filter={filter}
+              onfilterContactsByName={this.filterContactsByName}
+            />
+            {contacts.length > 0 ? (
+              <ContactList
+                contacts={filteredContacts}
+                ondeleteContact={this.deleteContact}
+              />
+            ) : (
+              <StyledNotification>
+                There are no contacts to show! Please add some contacts to the
+                phonebook
+              </StyledNotification>
+            )}
+          </Container>
+        </StyledSection>
+        <GlobalStyle />
       </>
     );
   }
